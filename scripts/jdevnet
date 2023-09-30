@@ -12,6 +12,7 @@ TARGETDIR="$BASEDIR/devnet/target"
 cp -af "$BASEDIR/devnet/config/genesis/" "$TARGETDIR"
 cp -af "$BASEDIR/devnet/config/protocol-parameters.json" "$TARGETDIR"
 
+# Copy faucet keys, address to the jambhala assets directory
 cp $BASEDIR/devnet/config/credentials/faucet.vkey $BASEDIR/cardano-cli-guru/assets/keys
 cp $BASEDIR/devnet/config/credentials/faucet.skey $BASEDIR/cardano-cli-guru/assets/keys
 cp $BASEDIR/devnet/config/credentials/faucet.addr $BASEDIR/cardano-cli-guru/assets/addr
@@ -20,6 +21,7 @@ echo '{"Producers": []}' > "$TARGETDIR/topology.json"
 sed -i "s/\"startTime\": [0-9]*/\"startTime\": $(date +%s)/" "$TARGETDIR/genesis-byron.json" && \
 sed -i "s/\"systemStart\": \".*\"/\"systemStart\": \"$(date -u +%FT%TZ)\"/" "$TARGETDIR/genesis-shelley.json"
 
+# Calculate activeSlotsCoeff from slot time parameter
 COEFF=$(jq -n 1/$1)
 echo "Setting slot time to $1: coeffecient=$COEFF"
 sed -i "s/\"activeSlotsCoeff\": .*/\"activeSlotsCoeff\": $COEFF,/" "$TARGETDIR/genesis-shelley.json"
@@ -36,4 +38,7 @@ cardano-node run \
   --socket-path $CARDANO_NODE_SOCKET_PATH \
   --shelley-operational-certificate $TARGETDIR/opcert.cert \
   --shelley-kes-key $TARGETDIR/kes.skey \
-  --shelley-vrf-key $TARGETDIR/vrf.skey
+  --shelley-vrf-key $TARGETDIR/vrf.skey &
+
+ogmios --node-socket $CARDANO_NODE_SOCKET_PATH \
+       --node-config $TARGETDIR/cardano-node.json > /dev/null 2>&1
